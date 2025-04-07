@@ -17,6 +17,11 @@ questions, feel free to ping us on `Cilium Slack`_.
 
 .. include:: upgrade-warning.rst
 
+.. note::
+   If using IPsec encryption the upgrade from v1.17 to v1.18 requires special
+   attention.
+   Please reference :ref:`encryption_ipsec`
+
 .. _pre_flight:
 
 Running pre-flight check (Required)
