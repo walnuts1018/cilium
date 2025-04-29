@@ -754,6 +754,11 @@ const (
 	// or direct routing is used and the node CIDR and pod CIDR overlap.
 	EncryptionStrictModeAllowRemoteNodeIdentities = "encryption-strict-mode-allow-remote-node-identities"
 
+	// EnableEncryptionStrictIngress enables strict mode encryption enforcement for ingress traffic.
+	// When enabled, all unencrypted pod-to-pod ingress traffic will be dropped.
+	// This option is only applicable when encryption and tunneling is enabled.
+	EnableEncryptionStrictIngress = "enable-encryption-strict-mode-ingress"
+
 	// WireguardPersistentKeepalive controls Wireguard PersistentKeepalive option. Set 0 to disable.
 	WireguardPersistentKeepalive = "wireguard-persistent-keepalive"
 
@@ -1480,6 +1485,11 @@ type DaemonConfig struct {
 	// This is required when tunneling is used
 	// or direct routing is used and the node CIDR and pod CIDR overlap.
 	EncryptionStrictModeAllowRemoteNodeIdentities bool
+
+	// EnableEncryptionStrictIngress enables strict mode encryption for ingress traffic.
+	// When enabled, all unencrypted pod-to-pod ingress traffic will be dropped.
+	// This option is only applicable when wireguard encryption and tunneling is enabled.
+	EnableEncryptionStrictIngress bool
 
 	// WireguardPersistentKeepalive controls Wireguard PersistentKeepalive option.
 	WireguardPersistentKeepalive time.Duration
@@ -2786,6 +2796,14 @@ func (c *DaemonConfig) Populate(logger *slog.Logger, vp *viper.Viper) {
 
 		c.EncryptionStrictModeAllowRemoteNodeIdentities = vp.GetBool(EncryptionStrictModeAllowRemoteNodeIdentities)
 		c.EnableEncryptionStrictMode = encryptionStrictModeEnabled
+	}
+
+	encryptionStrictIngressEnabled := vp.GetBool(EnableEncryptionStrictIngress)
+	if encryptionStrictIngressEnabled {
+		if !c.EnableWireguard {
+			logging.Fatal(logger, fmt.Sprintf("%s requires --%s enabled", EnableEncryptionStrictIngress, EnableWireguard))
+		}
+		c.EnableEncryptionStrictIngress = encryptionStrictIngressEnabled
 	}
 
 	ipv4NativeRoutingCIDR := vp.GetString(IPv4NativeRoutingCIDR)
