@@ -264,5 +264,28 @@ var _ = Describe("K8sAgentHubbleTest", func() {
 			Expect(flows).To(HaveLen(1))
 			Expect(flows[0].GetFlow().Destination.Identity).To(BeNumerically(">=", identity.MinimalNumericIdentity))
 		})
+
+		It("Test Hubble policy correlation", func() {
+			policyWithLog := helpers.ManifestGet(kubectl.BasePath(), "policy-log.yaml")
+
+			_, err := kubectl.CiliumPolicyAction(
+				namespaceForTest, policyWithLog,
+				helpers.KubectlApply, helpers.HelperTimeout)
+			Expect(err).To(BeNil(), "Cannot install policy with log")
+			defer kubectl.CiliumPolicyAction(namespaceForTest, policyWithLog,
+				helpers.KubectlDelete, helpers.HelperTimeout)
+
+			follow, err := kubectl.HubbleObserveFollow(ctx, ciliumPodK8s1, fmt.Sprintf(
+				"--last 1 --type policy-verdict --from-pod %s/%s --to-namespace %s --to-label %s --to-port %d",
+				namespaceForTest, appPods[helpers.App2], namespaceForTest, app1Labels, app1Port))
+			Expect(err).To(BeNil(), "Failed to start hubble observe")
+
+			res := kubectl.ExecPodCmd(namespaceForTest, appPods[helpers.App2],
+				helpers.CurlFail(fmt.Sprintf("http://%s/public", app1ClusterIP)))
+			res.ExpectSuccess("%q cannot curl clusterIP %q", appPods[helpers.App2], app1ClusterIP)
+
+			err = follow.WaitUntilMatchFilterLineTimeout(`{$.flow.Type}`, "L3_L4", helpers.ShortCommandTimeout)
+			Expect(err).To(BeNil(), fmt.Sprintf("hubble observe query timed out on %q", follow.OutputPrettyPrint()))
+		})
 	})
 })

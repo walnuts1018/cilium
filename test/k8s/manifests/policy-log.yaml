@@ -1,0 +1,11 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: policy-log-demo
+spec:
+  endpointSelector: {}
+  egress:
+    - toCIDR:
+      - 0.0.0.0/0
+  log:
+    value: "hello world, allowed"
