@@ -711,18 +711,21 @@ func (l4 *L4Filter) toMapState(
 		}
 
 		var cookie uint32
-		if derivedFrom, ok := l4.RuleOrigin[cs]; ok {
+		derivedFrom, ok := l4.RuleOrigin[cs]
+		if ok {
 			cookie = getPolicyLogCookie(logger, logCookieBakery, derivedFrom)
 		}
 
-		return newMapStateEntry(
-			l4.RuleOrigin[cs],
-			proxyPort,
-			currentRule.GetPriority(),
-			currentRule.GetDeny(),
-			currentRule.getAuthRequirement(),
-			cookie,
-		)
+		return mapStateEntry{
+			MapStateEntry: types.NewMapStateEntry(
+				currentRule.GetDeny(),
+				proxyPort,
+				currentRule.GetPriority(),
+				currentRule.getAuthRequirement(),
+				cookie,
+			),
+			derivedFromRules: derivedFrom,
+		}
 	}
 
 	wildcardEntry := mapStateEntry{MapStateEntry: MapStateEntry{Invalid: true}}
@@ -1778,14 +1781,17 @@ func (l4Policy *L4Policy) AccumulateMapChanges(
 			keysToAdd = append(keysToAdd,
 				KeyForDirection(direction).WithPortProtoPrefix(proto, mp.port, uint8(bits.LeadingZeros16(^mp.mask))))
 		}
-		value := newMapStateEntry(
-			derivedFrom,
-			proxyPort,
-			priority,
-			isDeny,
-			authReq,
-			cookie,
-		)
+
+		value := mapStateEntry{
+			MapStateEntry: types.NewMapStateEntry(
+				isDeny,
+				proxyPort,
+				priority,
+				authReq,
+				cookie,
+			),
+			derivedFromRules: derivedFrom,
+		}
 
 		if option.Config.Debug {
 			authString := "default"
