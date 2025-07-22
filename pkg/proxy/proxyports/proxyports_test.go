@@ -13,7 +13,30 @@ import (
 	"github.com/cilium/cilium/pkg/envoy"
 	"github.com/cilium/cilium/pkg/proxy/types"
 	"github.com/cilium/cilium/pkg/time"
+	"github.com/cilium/cilium/pkg/trigger"
+	"github.com/cilium/hive/hivetest"
 )
+
+func proxyPortsForTest(t *testing.T) (*ProxyPorts, func()) {
+	mockIPTablesManager := &MockDatapathUpdater{}
+	config := ProxyPortsConfig{
+		ProxyPortrangeMin:          10000,
+		ProxyPortrangeMax:          20000,
+		RestoredProxyPortsAgeLimit: 0,
+	}
+
+	p := NewProxyPorts(hivetest.Logger(t), config, mockIPTablesManager)
+	triggerDone := make(chan struct{})
+	p.Trigger, _ = trigger.NewTrigger(trigger.Parameters{
+		MinInterval:  10 * time.Millisecond,
+		TriggerFunc:  func(reasons []string) {},
+		ShutdownFunc: func() { close(triggerDone) },
+	})
+	return p, func() {
+		p.Trigger.Shutdown()
+		<-triggerDone
+	}
+}
 
 func (p *ProxyPorts) released(pp *ProxyPort) bool {
 	p.mutex.Lock()
