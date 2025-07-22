@@ -21,7 +21,7 @@ import (
 )
 
 func proxyForTest(t *testing.T) (*Proxy, func()) {
-	mockDatapathUpdater := &proxyports.MockIPTablesManager{}
+	mockDatapathUpdater := &proxyports.MockDatapathUpdater{}
 	ppConfig := proxyports.ProxyPortsConfig{
 		ProxyPortrangeMin:          10000,
 		ProxyPortrangeMax:          20000,

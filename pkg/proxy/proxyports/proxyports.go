@@ -16,7 +16,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/pflag"
 
-	datapath "github.com/cilium/cilium/pkg/datapath/types"
 	"github.com/cilium/cilium/pkg/lock"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/option"
@@ -119,7 +118,7 @@ type ProxyPorts struct {
 func NewProxyPorts(
 	logger *slog.Logger,
 	config ProxyPortsConfig,
-	datapathUpdater datapath.IptablesManager,
+	datapathUpdater DatapathUpdater,
 ) *ProxyPorts {
 	return &ProxyPorts{
 		logger:                       logger,
